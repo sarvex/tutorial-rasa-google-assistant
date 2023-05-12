@@ -28,16 +28,19 @@ class ActionPlaceSearch(Action):
         with open("./ga_credentials.yml", 'r') as ymlfile:
             cfg = yaml.load(ymlfile)
         key = cfg['credentials']['GOOGLE_KEY']
-		
-        #get user's current location		
+
+        #get user's current location
         get_origin = requests.post(
-            "https://www.googleapis.com/geolocation/v1/geolocate?key={}".format(key)).json()
+            f"https://www.googleapis.com/geolocation/v1/geolocate?key={key}"
+        ).json()
         print(get_origin)
         origin_lat = get_origin['location']['lat']
         origin_lng = get_origin['location']['lng']
-				
+
         #look for a place using all the details
-        place = requests.get('https://maps.googleapis.com/maps/api/place/nearbysearch/json?location={},{}&radius={}&type={}&key={}'.format(origin_lat, origin_lng, radius, query, key)).json()
+        place = requests.get(
+            f'https://maps.googleapis.com/maps/api/place/nearbysearch/json?location={origin_lat},{origin_lng}&radius={radius}&type={query}&key={key}'
+        ).json()
         if len(place['results'])==0:
             dispatcher.utter_message("Sorry, I didn't find anything")
             return [SlotSet('location_match', 'none')]
@@ -47,12 +50,9 @@ class ActionPlaceSearch(Action):
                     name = i['name']
                     rating = i['rating']
                     address = i['vicinity']
-                    if i['opening_hours']['open_now']==True:
-                        opening_hours = 'open'
-                    else:
-                        opening_hours = 'closed'
+                    opening_hours = 'open' if i['opening_hours']['open_now']==True else 'closed'
                     break
-        speech = "I found a {} called {} based on your specified parameters.".format(query, name)
+        speech = f"I found a {query} called {name} based on your specified parameters."
         dispatcher.utter_message(speech) #send the response back to the user	
         return [SlotSet('location_match', 'one'), SlotSet('rating', rating), SlotSet('address', address), SlotSet('opening_hours', opening_hours)] #set returned details as slots
 
